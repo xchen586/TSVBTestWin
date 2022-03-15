@@ -84,6 +84,7 @@ BOOL CVidCapDlg::OnInitDialog()
                 MessageBox(L"Failed to get image/jpeg encoder", L"warning");
         }
 
+		vcGetCaptureDevices(m_AdapterCombo);
 
         return TRUE;  // return TRUE  unless you set the focus to a control
 }

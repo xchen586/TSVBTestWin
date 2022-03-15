@@ -69,7 +69,8 @@ HRESULT sgSetSampleGrabberMediaType()
         AM_MEDIA_TYPE mt;
         ZeroMemory(&mt, sizeof(AM_MEDIA_TYPE));
         mt.majortype = MEDIATYPE_Video;
-        mt.subtype = MEDIASUBTYPE_RGB24;
+        //mt.subtype = MEDIASUBTYPE_RGBA32 NV12;
+		mt.subtype = MEDIASUBTYPE_RGB24;
         HRESULT hr = pGrabber->SetMediaType(&mt);
         if (FAILED(hr)) {
                 return hr;
