@@ -112,7 +112,7 @@ HRESULT vcCaptureVideo(HWND msgWindow, HWND prvWindow, unsigned int devIndex)
 
         // Use the system device enumerator and class enumerator to find
         // a video capture/preview device, such as a desktop USB video camera.
-        hr = FindCaptureDevice(&pSrcFilter);
+		hr = FindCaptureDevice(&pSrcFilter, devIndex);
         if (FAILED(hr)) {
                 // Don't display a message because FindCaptureDevice will handle it
                 return hr;
