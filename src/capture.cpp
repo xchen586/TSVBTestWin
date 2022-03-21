@@ -18,6 +18,8 @@ IMediaEventEx * g_pME = NULL;
 IGraphBuilder * g_pGraph = NULL;
 ICaptureGraphBuilder2 * g_pCapture = NULL;
 PLAYSTATE g_psCurrent = Stopped;
+unsigned int g_nDeviceCount = 0;
+
 
 //
 // Functions
@@ -41,27 +43,29 @@ void vcGetCaptureDevices(CComboBox& adaptersBox)
 
 // Create the System Device Enumerator.
         HRESULT hr;
-        ICreateDevEnum *pSysDevEnum = NULL;
+        ICreateDevEnum *pDevEnum = NULL;
         hr = CoCreateInstance(CLSID_SystemDeviceEnum, NULL, CLSCTX_INPROC_SERVER,
-                              IID_ICreateDevEnum, (void **) & pSysDevEnum);
+                              IID_ICreateDevEnum, (void **) & pDevEnum);
         if (FAILED(hr)) {
                 Msg(TEXT("CoCreateInstance() hr=0x%x"), hr);
                 return;
         }
 
 // Obtain a class enumerator for the video compressor category.
-        IEnumMoniker *pEnumCat = NULL;
-        hr = pSysDevEnum->CreateClassEnumerator(CLSID_VideoInputDeviceCategory, &pEnumCat, 0);
+        IEnumMoniker *pClassEnum = NULL;
+        hr = pDevEnum->CreateClassEnumerator(CLSID_VideoInputDeviceCategory, &pClassEnum, 0);
 
+		g_nDeviceCount = 0;
         if (hr == S_OK) {
                 // Enumerate the monikers.
                 IMoniker *pMoniker = NULL;
                 ULONG cFetched;
-                while (pEnumCat->Next(1, &pMoniker, &cFetched) == S_OK) {
+                while (pClassEnum->Next(1, &pMoniker, &cFetched) == S_OK) {
                         IPropertyBag *pPropBag;
                         hr = pMoniker->BindToStorage(0, 0, IID_IPropertyBag,
                                                      (void **) & pPropBag);
                         if (SUCCEEDED(hr)) {
+								g_nDeviceCount++;
                                 // To retrieve the filter's friendly name, do the following:
                                 VARIANT varName;
                                 VariantInit(&varName);
@@ -70,22 +74,118 @@ void vcGetCaptureDevices(CComboBox& adaptersBox)
                                         adaptersBox.AddString(varName.bstrVal);
                                 }
                                 VariantClear(&varName);
-
+#if 0
                                 // To create an instance of the filter, do the following:
                                 IBaseFilter *pFilter;
                                 hr = pMoniker->BindToObject(NULL, NULL, IID_IBaseFilter,
                                                             (void **) & pFilter);
+#endif
                                 // Now add the filter to the graph.
                                 //Remember to release pFilter later.
                                 pPropBag->Release();
                         }
                         pMoniker->Release();
                 }
-                pEnumCat->Release();
+                pClassEnum->Release();
         }
-        pSysDevEnum->Release();
+        pDevEnum->Release();
 
         adaptersBox.SetCurSel(0);
+}
+
+HRESULT FindCaptureDevice(IBaseFilter** ppSrcFilter, unsigned int devIndex)
+{
+	HRESULT hr = S_OK;
+	IBaseFilter* pSrc = NULL;
+	IMoniker* pMoniker = NULL;
+	ICreateDevEnum* pDevEnum = NULL;
+	IEnumMoniker* pClassEnum = NULL;
+
+	if (!ppSrcFilter) {
+		return E_POINTER;
+	}
+
+	// Create the system device enumerator
+	hr = CoCreateInstance(CLSID_SystemDeviceEnum, NULL, CLSCTX_INPROC,
+		IID_ICreateDevEnum, (void **)& pDevEnum);
+	if (FAILED(hr)) {
+		Msg(TEXT("Couldn't create system enumerator!  hr=0x%x"), hr);
+	}
+
+	// Create an enumerator for the video capture devices
+
+	if (SUCCEEDED(hr)) {
+		hr = pDevEnum->CreateClassEnumerator(CLSID_VideoInputDeviceCategory, &pClassEnum, 0);
+		if (FAILED(hr)) {
+			Msg(TEXT("Couldn't create class enumerator!  hr=0x%x"), hr);
+		}
+	}
+
+	if (SUCCEEDED(hr)) {
+		// If there are no enumerators for the requested type, then
+		// CreateClassEnumerator will succeed, but pClassEnum will be NULL.
+		if (pClassEnum == NULL) {
+			MessageBox(NULL, TEXT("No video capture device was detected.\r\n\r\n")
+				TEXT("This sample requires a video capture device, such as a USB WebCam,\r\n")
+				TEXT("to be installed and working properly.  The sample will now close."),
+				TEXT("No Video Capture Hardware"), MB_OK | MB_ICONINFORMATION);
+			hr = E_FAIL;
+		}
+	}
+
+	// Find the [devIndex] video capture device on the device list.
+	// Note that if the Next() call succeeds but there are no monikers,
+	// it will return S_FALSE (which is not a failure).  Therefore, we
+	// check that the return code is S_OK instead of using SUCCEEDED() macro.
+
+	if (SUCCEEDED(hr)) {
+		ULONG cFetched;
+		for (unsigned int i = 0; i < devIndex; i++) {
+		//for (unsigned int i = 0; i < g_nDeviceCount; i++) {
+			hr = pClassEnum->Next(1, &pMoniker, &cFetched);
+			if (hr == S_FALSE) {
+				Msg(TEXT("Unable to access video capture device!"));
+				hr = E_FAIL;
+				break;
+			}
+		}
+	}
+
+	if (SUCCEEDED(hr)) {
+		// Bind Moniker to a filter object
+		hr = pMoniker->BindToObject(0, 0, IID_IBaseFilter, (void **)& pSrc);
+		if (FAILED(hr)) {
+			Msg(TEXT("Couldn't bind moniker to filter object!  hr=0x%x"), hr);
+		}
+#ifdef DEBUG
+		IPropertyBag *pPropBag;
+		hr = pMoniker->BindToStorage(0, 0, IID_IPropertyBag,
+			(void **)& pPropBag);
+		if (SUCCEEDED(hr)) {
+			// To retrieve the filter's friendly name, do the following:
+			VARIANT varName;
+			VariantInit(&varName);
+			hr = pPropBag->Read(L"FriendlyName", &varName, 0);
+			if (SUCCEEDED(hr)) {
+				
+			}
+			VariantClear(&varName);
+		}
+#endif
+	}
+
+	// Copy the found filter pointer to the output parameter.
+	if (SUCCEEDED(hr)) {
+		*ppSrcFilter = pSrc;
+		(*ppSrcFilter)->AddRef();
+	}
+
+	SAFE_RELEASE(pSrc);
+	SAFE_RELEASE(pMoniker);
+	SAFE_RELEASE(pDevEnum);
+	SAFE_RELEASE(pClassEnum);
+
+	return hr;
 }
 
 HRESULT vcCaptureVideo(HWND msgWindow, HWND prvWindow, unsigned int devIndex)
@@ -195,84 +295,6 @@ void vcStopCaptureVideo()
 {
         sgCloseSampleGrabber();
         CloseInterfaces();
-}
-
-HRESULT FindCaptureDevice(IBaseFilter** ppSrcFilter, unsigned int devIndex)
-{
-        HRESULT hr = S_OK;
-        IBaseFilter* pSrc = NULL;
-        IMoniker* pMoniker = NULL;
-        ICreateDevEnum* pDevEnum = NULL;
-        IEnumMoniker* pClassEnum = NULL;
-
-        if (!ppSrcFilter) {
-                return E_POINTER;
-        }
-
-        // Create the system device enumerator
-        hr = CoCreateInstance(CLSID_SystemDeviceEnum, NULL, CLSCTX_INPROC,
-                              IID_ICreateDevEnum, (void **) & pDevEnum);
-        if (FAILED(hr)) {
-                Msg(TEXT("Couldn't create system enumerator!  hr=0x%x"), hr);
-        }
-
-        // Create an enumerator for the video capture devices
-
-        if (SUCCEEDED(hr)) {
-                hr = pDevEnum->CreateClassEnumerator(CLSID_VideoInputDeviceCategory, &pClassEnum, 0);
-                if (FAILED(hr)) {
-                        Msg(TEXT("Couldn't create class enumerator!  hr=0x%x"), hr);
-                }
-        }
-
-        if (SUCCEEDED(hr)) {
-                // If there are no enumerators for the requested type, then
-                // CreateClassEnumerator will succeed, but pClassEnum will be NULL.
-                if (pClassEnum == NULL) {
-                        MessageBox(NULL, TEXT("No video capture device was detected.\r\n\r\n")
-                                   TEXT("This sample requires a video capture device, such as a USB WebCam,\r\n")
-                                   TEXT("to be installed and working properly.  The sample will now close."),
-                                   TEXT("No Video Capture Hardware"), MB_OK | MB_ICONINFORMATION);
-                        hr = E_FAIL;
-                }
-        }
-
-        // Find the [devIndex] video capture device on the device list.
-        // Note that if the Next() call succeeds but there are no monikers,
-        // it will return S_FALSE (which is not a failure).  Therefore, we
-        // check that the return code is S_OK instead of using SUCCEEDED() macro.
-
-        if (SUCCEEDED(hr)) {
-                for (unsigned int i = 0; i < devIndex; i++) {
-                        hr = pClassEnum->Next(1, &pMoniker, NULL);
-                        if (hr == S_FALSE) {
-                                Msg(TEXT("Unable to access video capture device!"));
-                                hr = E_FAIL;
-                                break;
-                        }
-                }
-        }
-
-        if (SUCCEEDED(hr)) {
-                // Bind Moniker to a filter object
-                hr = pMoniker->BindToObject(0, 0, IID_IBaseFilter, (void **) & pSrc);
-                if (FAILED(hr)) {
-                        Msg(TEXT("Couldn't bind moniker to filter object!  hr=0x%x"), hr);
-                }
-        }
-
-        // Copy the found filter pointer to the output parameter.
-        if (SUCCEEDED(hr)) {
-                *ppSrcFilter = pSrc;
-                (*ppSrcFilter)->AddRef();
-        }
-
-        SAFE_RELEASE(pSrc);
-        SAFE_RELEASE(pMoniker);
-        SAFE_RELEASE(pDevEnum);
-        SAFE_RELEASE(pClassEnum);
-
-        return hr;
 }
 
 HRESULT GetInterfaces(HWND hWnd)
