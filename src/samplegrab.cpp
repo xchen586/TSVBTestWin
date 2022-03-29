@@ -14,6 +14,7 @@ unsigned char* _pBufferCapture = 0;
 unsigned char* _pBufferVB = 0;
 
 Gdiplus::Bitmap *_pCapturedBitmap = 0;
+Gdiplus::Bitmap *_pVBBitmap = 0;
 unsigned int gWidth = 0;
 unsigned int gHeight = 0;
 unsigned int gChannels = 0;
@@ -124,9 +125,9 @@ Gdiplus::Bitmap *sgGetCaptureBitmap()
 		if (_pGrabber == 0 || _pBufferCapture == 0 || gChannels != 4) {
 			return 0;
 		}
-			
-		sgRgb32ToRgba(_pBufferCapture, gWidth * gHeight);
                 
+		//sgRgb32ToRgba(_pBufferCapture, gWidth * gHeight);
+
         if (_pCapturedBitmap == 0)                
                 _pCapturedBitmap = ::new Gdiplus::Bitmap(gWidth, gHeight, PixelFormat32bppRGB);  //PixelFormat24bppRGB, PixelFormat32bppRGB    
         else if (gWidth != _pCapturedBitmap->GetWidth() || gHeight != _pCapturedBitmap->GetHeight()) {
@@ -141,6 +142,26 @@ Gdiplus::Bitmap *sgGetCaptureBitmap()
                 return _pCapturedBitmap;
         else
                 return 0;
+}
+
+Gdiplus::Bitmap *sgGetVBBitmap(unsigned char * pBufferInput)
+{	
+	if (!pBufferInput) {
+		return 0;
+	}
+	if (_pVBBitmap == 0)
+		_pVBBitmap = ::new Gdiplus::Bitmap(gWidth, gHeight, PixelFormat32bppRGB);  
+	else if (gWidth != _pVBBitmap->GetWidth() || gHeight != _pVBBitmap->GetHeight()) {
+		::delete _pVBBitmap;
+		_pVBBitmap = ::new Gdiplus::Bitmap(gWidth, gHeight, PixelFormat32bppRGB); 
+	}
+
+	if (sgSetBitmapData(_pVBBitmap, pBufferInput) == 0) {
+		return _pVBBitmap;
+	}
+	else {
+		return 0;
+	}
 }
 
 unsigned char* sgGrabRGB32Data()
@@ -177,9 +198,22 @@ unsigned char* sgGrabRGB32Data()
                 return 0;
         else {
                 sgFlipUpDown(_pBufferCapture);
+				sgRgb32ToRgba(_pBufferCapture, gWidth * gHeight);
 				//sgConvertBetweenBGRAandRGBA(_pBufferCapture, gWidth * gHeight, _pBufferVB);
 				return _pBufferCapture; 
         }
+}
+
+unsigned char* sgGrabBGRAData()
+{
+	unsigned char * pRGB32Data = sgGrabRGB32Data();
+	if (pRGB32Data && _pBufferVB) {
+		sgConvertBetweenBGRAandRGBA(pRGB32Data, gWidth * gHeight, _pBufferVB);
+		return _pBufferVB;
+	}
+	else {
+		return 0;
+	}
 }
 
 long sgGetBufferSize()

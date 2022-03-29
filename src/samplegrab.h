@@ -15,6 +15,9 @@ HRESULT sgGetSampleGrabberMediaType();
 
 unsigned char* sgGrabRGB32Data();            //call grab data first
 Gdiplus::Bitmap* sgGetCaptureBitmap();        //fill bitmap with grabbed data
+unsigned char* sgGrabBGRAData();
+Gdiplus::Bitmap *sgGetVBBitmap(unsigned char * pBufferInput);
+
 long sgGetBufferSize();
 
 unsigned int sgGetDataWidth();
