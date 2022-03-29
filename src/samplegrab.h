@@ -18,6 +18,9 @@ Gdiplus::Bitmap* sgGetCaptureBitmap();        //fill bitmap with grabbed data
 unsigned char* sgGrabBGRAData();
 Gdiplus::Bitmap *sgGetVBBitmap(unsigned char * pBufferInput);
 
+
+unsigned char* sgGetVBResultData();
+
 long sgGetBufferSize();
 
 unsigned int sgGetDataWidth();

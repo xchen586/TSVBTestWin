@@ -6,6 +6,9 @@
 #include "CVBAutoLock.h"
 
 CVBHandler * _pVBHandler = NULL;
+IPipeline * _pPipeline = NULL;
+IFrameFactory * _pFrameFactroy = NULL;
+
 IBaseFilter *_pGrabberFilter = NULL;
 ISampleGrabber *_pGrabber = NULL;
 
@@ -28,11 +31,18 @@ void sgFreeMediaType(AM_MEDIA_TYPE& mt);
 void setVBHandler(CVBHandler * pVBHandler)
 {
 	_pVBHandler = pVBHandler;
+	if (_pVBHandler) {
+		_pPipeline = _pVBHandler->_pipeline;
+		_pFrameFactroy = _pVBHandler->_frameFactory;
+	}
 }
 
 BOOL isVBReady()
 {
-	return _pVBHandler && _pVBHandler->isInitialized();
+	return _pVBHandler 
+		&& _pVBHandler->isInitialized()
+		&& _pPipeline
+		&& _pFrameFactroy;
 }
 
 IBaseFilter* sgGetSampleGrabber()
@@ -314,4 +324,53 @@ void sgRgb32ToRgba(unsigned char* input, int pixel_width)
 		unsigned char* pixel_in = &input[x * 4];
 		pixel_in[3] = 0;
 	}
+}
+
+unsigned char* sgGetBufferDataFromFrame(IFrame * pFrame, BOOL isCopy)
+{
+	if (!pFrame) {
+		return 0;
+	}
+	return 0;
+}
+
+
+unsigned char* sgGetVBResultData(unsigned char* pInputBGRA)
+{
+	if (!pInputBGRA) {
+		return 0;
+	}
+
+	if (!isVBReady()) {
+		return 0;
+	}
+
+	void * pInput = (void *)pInputBGRA;
+	IFrame * pInputFrame = _pFrameFactroy->createBGRA(pInput
+		, gWidth * gChannels
+		, gWidth
+		, gHeight
+		, false);
+	if (!pInputFrame) {
+		return 0;
+	}
+
+	PipelineError err;
+	IFrame * pProcessedFrame = _pPipeline->process(pInputFrame, &err);
+	if (pInputFrame) {
+		pInputFrame->release();
+	}
+	
+	if (!pProcessedFrame) {
+		return 0;
+	}
+
+
+	return 0;
+}
+
+unsigned char* sgGetVBResultData()
+{
+	unsigned char* pInputBGRA = sgGrabBGRAData();
+	return sgGetVBResultData(pInputBGRA);
 }
