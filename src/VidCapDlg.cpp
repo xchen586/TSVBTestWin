@@ -14,7 +14,7 @@
 #define new DEBUG_NEW
 #endif
 
-
+#define USE_MULTIMEDIA_TIMER 0
 
 
 // CVidCapDlg dialog
@@ -22,7 +22,12 @@
 
 CVidCapDlg::CVidCapDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CVidCapDlg::IDD, pParent)
-	, m_nTimer(0), m_nTimerInterval(30)
+	, m_nTimer(0)
+#if USE_MULTIMEDIA_TIMER 
+	, m_nTimerInterval(30)
+#else
+	, m_nTimerInterval(10)
+#endif
 	, m_idEvent(0), m_uResolution(30)
 	, m_TakeSnapshot(false)
 	, pBmpEncoder(GUID_NULL)
@@ -187,8 +192,11 @@ void CVidCapDlg::OnBnClickedRunButton()
 {
 	UpdateData();
 
-	//OnDealWithTimer();
+#if USE_MULTIMEDIA_TIMER
 	OnDealWithMultiMediaTimer();
+#else
+	OnDealWithTimer();
+#endif
 }
 
 void CVidCapDlg::OnDealWithTimer()
