@@ -147,15 +147,18 @@ unsigned char* sgGrabData()
                 _bufferSize = Size;
 				if (pBufferCapture != 0) {
 					delete[] pBufferCapture;
-					pBufferCapture = new unsigned char[_bufferSize];
+					pBufferCapture = nullptr;
 				}
-
+				pBufferCapture = new unsigned char[_bufferSize];
 				if (_pBufferVB != 0) {
 					delete[] _pBufferVB;
-					_pBufferVB = new unsigned char[_bufferSize];
+					_pBufferVB = nullptr;
  				}
+				_pBufferVB = new unsigned char[_bufferSize];
         }
-
+		if (!pBufferCapture) {
+			return 0;
+		}
         hr = _pGrabber->GetCurrentBuffer(&_bufferSize, (long*)pBufferCapture);
         if (FAILED(hr))
                 return 0;
