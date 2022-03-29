@@ -4,6 +4,10 @@
 
 #define SAFE_RELEASE(x) { if (x) x->Release(); x = NULL; }
 
+class CVBHandler;
+
+void setVBHandler(CVBHandler * pVBHandler);
+
 IBaseFilter* sgGetSampleGrabber();
 HRESULT sgAddSampleGrabber(IGraphBuilder *pGraph);
 HRESULT sgSetSampleGrabberMediaType();

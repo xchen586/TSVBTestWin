@@ -2,8 +2,10 @@
 
 #include "stdafx.h"
 #include "samplegrab.h"
+#include "CVBHandler.h"
+#include "CVBAutoLock.h"
 
-
+CVBHandler * _pVBHandler = NULL;
 IBaseFilter *_pGrabberFilter = NULL;
 ISampleGrabber *_pGrabber = NULL;
 
@@ -21,6 +23,16 @@ int sgSetBitmapData(Gdiplus::Bitmap* pBitmap, const unsigned char* pData);
 void sgFlipUpDown(unsigned char* pData);
 void sgFreeMediaType(AM_MEDIA_TYPE& mt);
 
+
+void setVBHandler(CVBHandler * pVBHandler)
+{
+	_pVBHandler = pVBHandler;
+}
+
+BOOL isVBReady()
+{
+	return _pVBHandler && _pVBHandler->isInitialized();
+}
 
 IBaseFilter* sgGetSampleGrabber()
 {
@@ -133,6 +145,7 @@ Gdiplus::Bitmap *sgGetCaptureBitmap()
 
 unsigned char* sgGrabRGB32Data()
 {
+	
         HRESULT hr;
 
         if (_pGrabber == 0)
@@ -164,7 +177,7 @@ unsigned char* sgGrabRGB32Data()
                 return 0;
         else {
                 sgFlipUpDown(_pBufferCapture);
-				sgConvertBetweenBGRAandRGBA(_pBufferCapture, gWidth * gHeight, _pBufferVB);
+				//sgConvertBetweenBGRAandRGBA(_pBufferCapture, gWidth * gHeight, _pBufferVB);
 				return _pBufferCapture; 
         }
 }

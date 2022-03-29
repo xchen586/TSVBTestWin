@@ -39,7 +39,7 @@
     <ClCompile Include="samplegrab.cpp">
       <Filter>Capture</Filter>
     </ClCompile>
-    <ClCompile Include="VBHandler.cpp">
+    <ClCompile Include="CVBHandler.cpp">
       <Filter>TSVB</Filter>
     </ClCompile>
   </ItemGroup>
@@ -80,11 +80,11 @@
     <ClInclude Include="vb_sdk\sdk_factory.h">
       <Filter>Header Files\VBSDK</Filter>
     </ClInclude>
-    <ClInclude Include="VBHandler.h">
-      <Filter>TSVB</Filter>
-    </ClInclude>
     <ClInclude Include="CVBAutoLock.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CVBHandler.h">
+      <Filter>TSVB</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

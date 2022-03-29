@@ -3,7 +3,7 @@
 
 #pragma once
 #include "afxwin.h"
-#include "VBHandler.h"
+#include "CVBHandler.h"
 
 // CVidCapDlg dialog
 class CVidCapDlg : public CDialog
