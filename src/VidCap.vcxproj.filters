@@ -83,6 +83,9 @@
     <ClInclude Include="VBHandler.h">
       <Filter>TSVB</Filter>
     </ClInclude>
+    <ClInclude Include="CVBAutoLock.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\VidCap.ico">
