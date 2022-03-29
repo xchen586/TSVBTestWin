@@ -12,7 +12,6 @@ public:
 
 protected:
 	bool init();
-	void releaseResource();
 	
 protected:
 	pfnCreateSDKFactory _createFactory;
@@ -24,6 +23,7 @@ public:
 	IReplacementController * _backgroundController;
 	
 public:
+	void releaseResource();
 	void setBackgroundWithContentOfFile(TCHAR * imagePath);
 	void resetBackgroundImage();
 	bool isInitialized() {

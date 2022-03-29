@@ -5,13 +5,13 @@
 #include "afxwin.h"
 #include "VBHandler.h"
 
-
 // CVidCapDlg dialog
 class CVidCapDlg : public CDialog
 {
 // Construction
 public:
         CVidCapDlg(CWnd* pParent = NULL);	// standard constructor
+		void MMTimerHandler(UINT nIDEvent);
 
 // Dialog Data
         enum { IDD = IDD_VIDCAP_DIALOG };
@@ -31,6 +31,9 @@ protected:
         DECLARE_MESSAGE_MAP()
 
 private:
+		UINT m_uResolution;
+		MMRESULT m_idEvent;
+
         UINT_PTR m_nTimer;
         CStatic m_PrvStatic;
         CStatic m_CapImgStatic;
@@ -51,11 +54,16 @@ private:
         afx_msg LRESULT OnGraphMessage(WPARAM wParam, LPARAM lParam);
         afx_msg void OnBnClickedEnumadaptorsButton();
         afx_msg void OnBnClickedRunButton();
+		void OnDealWithTimer();
+		void OnDealWithMultiMediaTimer();
         afx_msg void OnTimer(UINT_PTR nIDEvent);
 		afx_msg void OnOK();
         afx_msg void OnClose();
-        afx_msg void OnWindowPosChanged(WINDOWPOS* lpwndpos);
+		afx_msg void OnWindowPosChanged(WINDOWPOS* lpwndpos);
         afx_msg void OnBnClickedFdetectCheck();       
         afx_msg void OnStnDblclickCapimgStatic();
 
 };
+
+void CALLBACK TimerFunction(UINT wTimerID, UINT msg,
+	DWORD dwUser, DWORD dw1, DWORD dw2);

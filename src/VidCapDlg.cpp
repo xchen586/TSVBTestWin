@@ -9,6 +9,7 @@
 #include "samplegrab.h"
 
 
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -21,7 +22,8 @@
 
 CVidCapDlg::CVidCapDlg(CWnd* pParent /*=NULL*/)
                 : CDialog(CVidCapDlg::IDD, pParent)
-                , m_nTimer(0), m_nTimerInterval(10)                                
+                , m_nTimer(0), m_nTimerInterval(30)    
+				, m_idEvent(0), m_uResolution(30)
                 , m_TakeSnapshot(false)
                 , pBmpEncoder(GUID_NULL)
 {
@@ -71,7 +73,7 @@ BOOL CVidCapDlg::OnInitDialog()
         SetIcon(m_hIcon, TRUE);			// Set big icon
         SetIcon(m_hIcon, FALSE);		// Set small icon
 
-		// TODO: Add extra initialization here
+        // TODO: Add extra initialization here
 		if (!m_handler.isInitialized()) {
 			MessageBox(L"Fail to load VB SDK!", L"VB error");
 			PostMessage(WM_CLOSE);
@@ -106,6 +108,7 @@ void CVidCapDlg::OnClose()
         vcStopCaptureVideo();
         CoUninitialize();        
 
+		m_handler.releaseResource();
         CDialog::OnClose();
 }
 
@@ -183,47 +186,136 @@ void CVidCapDlg::OnBnClickedRunButton()
 {
         UpdateData();
 
-        HRESULT hr;
-        if (m_nTimer == 0) {
-                //Run capture
-                hr = vcCaptureVideo(m_hWnd, m_PrvStatic.m_hWnd, m_AdapterCombo.GetCurSel() + 1);
-                if (hr != S_OK) {
-                        vcStopCaptureVideo();
-                        return;
-                }
-                
-                CString str;
-                str.Format(L"Video output: %dx%d %dbpp", sgGetDataWidth(), sgGetDataHeight(), 8 * sgGetDataChannels()); 
-                m_VideoFormat.SetWindowTextW(str);
+		OnDealWithTimer();
+		//OnDealWithMultiMediaTimer();
+}
 
-                //Setup Timer
-                m_nTimer = SetTimer(1, m_nTimerInterval, 0);                                        
+void CVidCapDlg::OnDealWithTimer()
+{
+	HRESULT hr;
+	if (m_nTimer == 0) {
+		//Run capture
+		hr = vcCaptureVideo(m_hWnd, m_PrvStatic.m_hWnd, m_AdapterCombo.GetCurSel() + 1);
+		if (hr != S_OK) {
+			vcStopCaptureVideo();
+			return;
+		}
 
-                m_RunButton.SetWindowTextW(L"Stop");
-        } else {
-                //Close Timer
-                KillTimer(m_nTimer);
-                m_nTimer = 0;
-                m_RunButton.SetWindowTextW(L"Run");
+		CString str;
+		str.Format(L"Video output: %dx%d %dbpp", sgGetDataWidth(), sgGetDataHeight(), 8 * sgGetDataChannels());
+		m_VideoFormat.SetWindowTextW(str);
 
-                m_VideoFormat.SetWindowTextW(L"Video output");
-                //Close Capture
-                vcStopCaptureVideo();
-        }
+		//Setup Timer
+		m_nTimer = SetTimer(1, m_nTimerInterval, 0);
+
+		m_RunButton.SetWindowTextW(L"Stop");
+	}
+	else {
+		//Close Timer
+		KillTimer(m_nTimer);
+		m_nTimer = 0;
+		m_RunButton.SetWindowTextW(L"Run");
+
+		m_VideoFormat.SetWindowTextW(L"Video output");
+		//Close Capture
+		vcStopCaptureVideo();
+	}
 }
 
 void CVidCapDlg::OnTimer(UINT_PTR nIDEvent)
 {
-        // TODO: Add your message handler code here and/or call default
-        SYSTEMTIME SystemTime;
-        GetLocalTime(&SystemTime);
-        TRACE(L" %d:%d:%d\n", SystemTime.wHour, SystemTime.wMinute, SystemTime.wSecond);
+	// TODO: Add your message handler code here and/or call default
+	SYSTEMTIME SystemTime;
+	GetLocalTime(&SystemTime);
+	TRACE(L" %d:%d:%d\n", SystemTime.wHour, SystemTime.wMinute, SystemTime.wSecond);
 
-        unsigned char* pData = sgGrabRGB32Data();
-        if (pData != 0) 
-                DrawData(sgGetCaptureBitmap());        
+	unsigned char* pData = sgGrabRGB32Data();
+	if (pData != 0)
+		DrawData(sgGetCaptureBitmap());
 
-        CDialog::OnTimer(nIDEvent);
+	CDialog::OnTimer(nIDEvent);
+}
+
+void CVidCapDlg::OnDealWithMultiMediaTimer()
+{
+	
+	HRESULT hr;
+	if (!m_idEvent) {
+		//Run capture
+		hr = vcCaptureVideo(m_hWnd, m_PrvStatic.m_hWnd, m_AdapterCombo.GetCurSel() + 1);
+		if (hr != S_OK) {
+			vcStopCaptureVideo();
+			return;
+		}
+
+		CString str;
+		str.Format(L"Video output: %dx%d %dbpp", sgGetDataWidth(), sgGetDataHeight(), 8 * sgGetDataChannels());
+		m_VideoFormat.SetWindowTextW(str);
+
+		// Set resolution to the minimum supported by the system
+		TIMECAPS tc;
+		timeGetDevCaps(&tc, sizeof(TIMECAPS));
+		m_uResolution = min(max(tc.wPeriodMin, m_nTimerInterval), tc.wPeriodMax);
+		timeBeginPeriod(m_uResolution);
+
+		// create the timer
+		m_idEvent = timeSetEvent(
+			30,
+			m_uResolution,
+#ifdef _WIN64
+			NULL,
+#else
+			TimerFunction,
+#endif
+			(DWORD)this,
+			TIME_PERIODIC);
+
+		m_RunButton.SetWindowTextW(L"Stop");
+	}
+	else {
+		// destroy the timer
+		timeKillEvent(m_idEvent);
+		m_idEvent = 0;
+		// reset the timer
+		timeEndPeriod(m_uResolution);
+
+		m_RunButton.SetWindowTextW(L"Run");
+
+		m_VideoFormat.SetWindowTextW(L"Video output");
+		//Close Capture
+		vcStopCaptureVideo();
+	}
+
+	
+}
+
+
+#ifdef _WIN64
+static void TimerFunction(UINT wTimerID, UINT msg,
+	DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2)
+#else
+void CALLBACK TimerFunction(UINT wTimerID, UINT msg,
+	DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2)
+#endif
+{
+	// This is used only to call MMTimerHandler
+
+	// Typically, this function is static member of CTimersDlg
+
+	CVidCapDlg* obj = (CVidCapDlg*)dwUser;
+	obj->MMTimerHandler(wTimerID);
+}
+
+void CVidCapDlg::MMTimerHandler(UINT nIDEvent) // called every elTime milliseconds
+{
+	// do what you want to do, but quickly
+	SYSTEMTIME SystemTime;
+	GetLocalTime(&SystemTime);
+	TRACE(L" %d:%d:%d\n", SystemTime.wHour, SystemTime.wMinute, SystemTime.wSecond);
+
+	unsigned char* pData = sgGrabRGB32Data();
+	if (pData != 0)
+		DrawData(sgGetCaptureBitmap());
 }
 
 
@@ -265,7 +357,7 @@ void CVidCapDlg::DrawData(Gdiplus::Bitmap *pBitmap)
 
         g.DrawImage(pBitmap, Gdiplus::Rect(0, 0, r.right, r.bottom));
         
-        UpdateData(FALSE);
+        //UpdateData(FALSE);
 }
 
 void CVidCapDlg::OnStnDblclickCapimgStatic()
