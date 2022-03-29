@@ -18,17 +18,17 @@ CVBHandler::~CVBHandler()
 	releaseResource();
 }
 
-bool CVBHandler::init() 
+bool CVBHandler::init()
 {
-	
+
 	HMODULE handle = LoadLibrary(_T("mcvb.dll"));
 	if (!handle) {
 		return false;
 	}
-	
+
 	_createFactory = reinterpret_cast<pfnCreateSDKFactory>(
 		GetProcAddress(handle, "createSDKFactory")
-	);
+		);
 	if (!_createFactory) {
 		return false;
 	}
@@ -42,7 +42,7 @@ bool CVBHandler::init()
 	if (!_pipeline) {
 		return false;
 	}
-	
+
 	_frameFactory = _sdkFactory->createFrameFactory();
 	if (!_frameFactory) {
 		return false;
@@ -77,7 +77,7 @@ void CVBHandler::releaseResource()
 	}
 }
 
-void CVBHandler::setBackgroundWithContentOfFile(TCHAR * imagePath) 
+void CVBHandler::setBackgroundWithContentOfFile(TCHAR * imagePath)
 {
 	if (!imagePath) {
 		return;
