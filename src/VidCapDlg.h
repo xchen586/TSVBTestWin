@@ -67,5 +67,10 @@ private:
 
 };
 
+#ifdef _WIN64
+void __stdcall TimerFunction(UINT wTimerID, UINT msg,
+	DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2);
+#else
 void CALLBACK TimerFunction(UINT wTimerID, UINT msg,
-	DWORD dwUser, DWORD dw1, DWORD dw2);
+	DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2);
+#endif

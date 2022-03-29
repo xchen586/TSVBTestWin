@@ -187,8 +187,8 @@ void CVidCapDlg::OnBnClickedRunButton()
 {
 	UpdateData();
 
-	OnDealWithTimer();
-	//OnDealWithMultiMediaTimer();
+	//OnDealWithTimer();
+	OnDealWithMultiMediaTimer();
 }
 
 void CVidCapDlg::OnDealWithTimer()
@@ -272,12 +272,8 @@ void CVidCapDlg::OnDealWithMultiMediaTimer()
 		m_idEvent = timeSetEvent(
 			30,
 			m_uResolution,
-#ifdef _WIN64
-			NULL,
-#else
 			TimerFunction,
-#endif
-			(DWORD)this,
+			(DWORD_PTR)this,
 			TIME_PERIODIC);
 
 		m_RunButton.SetWindowTextW(L"Stop");
@@ -301,7 +297,7 @@ void CVidCapDlg::OnDealWithMultiMediaTimer()
 
 
 #ifdef _WIN64
-static void TimerFunction(UINT wTimerID, UINT msg,
+void __stdcall TimerFunction(UINT wTimerID, UINT msg,
 	DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2)
 #else
 void CALLBACK TimerFunction(UINT wTimerID, UINT msg,
