@@ -225,6 +225,12 @@ void CVidCapDlg::OnDealWithTimer()
 void CVidCapDlg::OnTimer(UINT_PTR nIDEvent)
 {
 	// TODO: Add your message handler code here and/or call default
+	DoCaptureFrame();
+	CDialog::OnTimer(nIDEvent);
+}
+
+void CVidCapDlg::DoCaptureFrame()
+{
 	SYSTEMTIME SystemTime;
 	GetLocalTime(&SystemTime);
 	TRACE(L" %d:%d:%d\n", SystemTime.wHour, SystemTime.wMinute, SystemTime.wSecond);
@@ -232,8 +238,11 @@ void CVidCapDlg::OnTimer(UINT_PTR nIDEvent)
 	unsigned char* pData = sgGrabRGB32Data();
 	if (pData != 0)
 		DrawData(sgGetCaptureBitmap());
+}
 
-	CDialog::OnTimer(nIDEvent);
+void CVidCapDlg::DoVBFrame()
+{
+
 }
 
 void CVidCapDlg::OnDealWithMultiMediaTimer()
@@ -309,13 +318,7 @@ void CALLBACK TimerFunction(UINT wTimerID, UINT msg,
 void CVidCapDlg::MMTimerHandler(UINT nIDEvent) // called every elTime milliseconds
 {
 	// do what you want to do, but quickly
-	SYSTEMTIME SystemTime;
-	GetLocalTime(&SystemTime);
-	TRACE(L" %d:%d:%d\n", SystemTime.wHour, SystemTime.wMinute, SystemTime.wSecond);
-
-	unsigned char* pData = sgGrabRGB32Data();
-	if (pData != 0)
-		DrawData(sgGetCaptureBitmap());
+	DoCaptureFrame();
 }
 
 

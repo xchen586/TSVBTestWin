@@ -50,12 +50,14 @@ private:
         
         void DrawData(Gdiplus::Bitmap* pBitmap);        
 
+		void OnDealWithTimer();
+		void OnDealWithMultiMediaTimer();
+		void DoCaptureFrame();
+		void DoVBFrame();
 
         afx_msg LRESULT OnGraphMessage(WPARAM wParam, LPARAM lParam);
         afx_msg void OnBnClickedEnumadaptorsButton();
         afx_msg void OnBnClickedRunButton();
-		void OnDealWithTimer();
-		void OnDealWithMultiMediaTimer();
         afx_msg void OnTimer(UINT_PTR nIDEvent);
 		afx_msg void OnOK();
         afx_msg void OnClose();
