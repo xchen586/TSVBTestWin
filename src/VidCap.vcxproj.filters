@@ -19,6 +19,9 @@
     <Filter Include="Header Files\VBSDK">
       <UniqueIdentifier>{d379dc56-0ca7-4022-a44e-f1ca7dcfd28f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="TSVB">
+      <UniqueIdentifier>{44852a7b-573a-4e18-8230-15b4b10059b9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -35,6 +38,9 @@
     </ClCompile>
     <ClCompile Include="samplegrab.cpp">
       <Filter>Capture</Filter>
+    </ClCompile>
+    <ClCompile Include="VBHandler.cpp">
+      <Filter>TSVB</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -73,6 +79,9 @@
     </ClInclude>
     <ClInclude Include="vb_sdk\sdk_factory.h">
       <Filter>Header Files\VBSDK</Filter>
+    </ClInclude>
+    <ClInclude Include="VBHandler.h">
+      <Filter>TSVB</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

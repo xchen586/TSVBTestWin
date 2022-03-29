@@ -71,7 +71,12 @@ BOOL CVidCapDlg::OnInitDialog()
         SetIcon(m_hIcon, TRUE);			// Set big icon
         SetIcon(m_hIcon, FALSE);		// Set small icon
 
-        // TODO: Add extra initialization here
+		// TODO: Add extra initialization here
+		if (!m_handler.isInitialized()) {
+			MessageBox(L"Fail to load VB SDK!", L"VB error");
+			PostMessage(WM_CLOSE);
+			return FALSE;
+		}
 
         // Initialize COM
         if (FAILED(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED))) {

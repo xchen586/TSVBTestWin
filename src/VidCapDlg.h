@@ -3,6 +3,7 @@
 
 #pragma once
 #include "afxwin.h"
+#include "VBHandler.h"
 
 
 // CVidCapDlg dialog
@@ -39,6 +40,7 @@ private:
         CStatic m_VideoFormat;                
         bool m_TakeSnapshot;
         
+		CVBHandler m_handler;
 
         CLSID pBmpEncoder;
         int GetEncoderClsid(const WCHAR* format, CLSID* pClsid);
