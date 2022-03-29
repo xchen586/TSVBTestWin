@@ -219,9 +219,9 @@ void CVidCapDlg::OnTimer(UINT_PTR nIDEvent)
         GetLocalTime(&SystemTime);
         TRACE(L" %d:%d:%d\n", SystemTime.wHour, SystemTime.wMinute, SystemTime.wSecond);
 
-        unsigned char* pData = sgGrabData();
+        unsigned char* pData = sgGrabRGB32Data();
         if (pData != 0) 
-                DrawData(sgGetBitmap());        
+                DrawData(sgGetCaptureBitmap());        
 
         CDialog::OnTimer(nIDEvent);
 }

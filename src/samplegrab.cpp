@@ -104,7 +104,7 @@ HRESULT sgGetSampleGrabberMediaType()
         return hr;
 }
 
-Gdiplus::Bitmap *sgGetBitmap()
+Gdiplus::Bitmap *sgGetCaptureBitmap()
 {        
         /*if (pGrabber == 0 || pBuffer == 0 || gChannels != 3)
                 return 0;*/
@@ -131,7 +131,7 @@ Gdiplus::Bitmap *sgGetBitmap()
                 return 0;
 }
 
-unsigned char* sgGrabData()
+unsigned char* sgGrabRGB32Data()
 {
         HRESULT hr;
 
