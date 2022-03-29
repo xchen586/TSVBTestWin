@@ -8,7 +8,8 @@ IBaseFilter *pGrabberFilter = NULL;
 ISampleGrabber *pGrabber = NULL;
 
 long pBufferSize = 0;
-unsigned char* pBuffer = 0;
+unsigned char* pBufferRGBA = 0;
+unsigned char* pBufferBGRA = 0;
 
 Gdiplus::Bitmap *pCapturedBitmap = 0;
 unsigned int gWidth = 0;
@@ -28,11 +29,16 @@ IBaseFilter* sgGetSampleGrabber()
 
 void sgCloseSampleGrabber()
 {
-        if (pBuffer != 0) {
-                delete[] pBuffer;
-                pBuffer = 0;
+        if (pBufferRGBA != 0) {
+                delete[] pBufferRGBA;
+                pBufferRGBA = 0;
                 pBufferSize = 0;
         }
+	
+		if (pBufferBGRA) {
+			delete[] pBufferBGRA;
+			pBufferBGRA = 0;
+		}
 
         if (pCapturedBitmap != 0) {
                 ::delete pCapturedBitmap;
@@ -70,7 +76,8 @@ HRESULT sgSetSampleGrabberMediaType()
         ZeroMemory(&mt, sizeof(AM_MEDIA_TYPE));
         mt.majortype = MEDIATYPE_Video;
         //mt.subtype = MEDIASUBTYPE_RGBA32 NV12;
-		mt.subtype = MEDIASUBTYPE_RGB24;
+		//mt.subtype = MEDIASUBTYPE_RGB24;
+		mt.subtype = MEDIASUBTYPE_RGB32;
         HRESULT hr = pGrabber->SetMediaType(&mt);
         if (FAILED(hr)) {
                 return hr;
@@ -99,20 +106,26 @@ HRESULT sgGetSampleGrabberMediaType()
 
 Gdiplus::Bitmap *sgGetBitmap()
 {        
-        if (pGrabber == 0 || pBuffer == 0 || gChannels != 3)
-                return 0;
+        /*if (pGrabber == 0 || pBuffer == 0 || gChannels != 3)
+                return 0;*/
+
+		if (pGrabber == 0 || pBufferRGBA == 0 || gChannels != 4) {
+			return 0;
+		}
+			
+		sgRgb32ToRgba(pBufferRGBA, gWidth * gHeight);
                 
         if (pCapturedBitmap == 0)                
-                pCapturedBitmap = ::new Gdiplus::Bitmap(gWidth, gHeight, PixelFormat24bppRGB);        
+                pCapturedBitmap = ::new Gdiplus::Bitmap(gWidth, gHeight, PixelFormat32bppRGB);  //PixelFormat24bppRGB, PixelFormat32bppRGB    
         else if (gWidth != pCapturedBitmap->GetWidth() || gHeight != pCapturedBitmap->GetHeight()) {
                 ::delete pCapturedBitmap;
-                pCapturedBitmap = ::new Gdiplus::Bitmap(gWidth, gHeight, PixelFormat24bppRGB);
+                pCapturedBitmap = ::new Gdiplus::Bitmap(gWidth, gHeight, PixelFormat32bppRGB); //PixelFormat24bppRGB, PixelFormat32bppRGB
         }
 
         if (pBufferSize != gWidth * gHeight * gChannels)
                 return 0;
         
-        if (sgSetBitmapData(pCapturedBitmap, pBuffer) == 0)
+        if (sgSetBitmapData(pCapturedBitmap, pBufferRGBA) == 0)
                 return pCapturedBitmap;
         else
                 return 0;
@@ -127,21 +140,29 @@ unsigned char* sgGrabData()
 
         long Size = 0;
         hr = pGrabber->GetCurrentBuffer(&Size, NULL);
-        if (FAILED(hr))
-                return 0;
+		if (FAILED(hr)) {
+			return 0;
+		}  
         else if (Size != pBufferSize) {
                 pBufferSize = Size;
-                if (pBuffer != 0)
-                        delete[] pBuffer;
-                pBuffer = new unsigned char[pBufferSize];
+				if (pBufferRGBA != 0) {
+					delete[] pBufferRGBA;
+					pBufferRGBA = new unsigned char[pBufferSize];
+				}
+
+				if (pBufferBGRA != 0) {
+					delete[] pBufferBGRA;
+					pBufferBGRA = new unsigned char[pBufferSize];
+ 				}
         }
 
-        hr = pGrabber->GetCurrentBuffer(&pBufferSize, (long*)pBuffer);
+        hr = pGrabber->GetCurrentBuffer(&pBufferSize, (long*)pBufferRGBA);
         if (FAILED(hr))
                 return 0;
         else {
-                sgFlipUpDown(pBuffer);
-                return pBuffer;                
+                sgFlipUpDown(pBufferRGBA);
+				//sgConvertBetweenBGRAandRGBA(pBufferRGBA, gWidth * gHeight, pBufferBGRA);
+				return pBufferRGBA; 
         }
 }
 
@@ -155,18 +176,26 @@ int sgSetBitmapData(Gdiplus::Bitmap* pBitmap, const unsigned char* pData)
         Gdiplus::BitmapData bitmapData;
         bitmapData.Width = pBitmap->GetWidth();
         bitmapData.Height = pBitmap->GetHeight();
-        bitmapData.Stride = 3 * bitmapData.Width;
+        //bitmapData.Stride = 3 * bitmapData.Width;
+		bitmapData.Stride = 4 * bitmapData.Width;
         bitmapData.PixelFormat = pBitmap->GetPixelFormat();
         bitmapData.Scan0 = (VOID*)pData;
         bitmapData.Reserved = NULL;
 
         Gdiplus::Status s = pBitmap->LockBits(&Gdiplus::Rect(0, 0, pBitmap->GetWidth(), pBitmap->GetHeight()),
                                               Gdiplus::ImageLockModeWrite | Gdiplus::ImageLockModeUserInputBuf,
-                                              PixelFormat24bppRGB, &bitmapData);
+				PixelFormat32bppRGB, &bitmapData); //PixelFormat24bppRGB, PixelFormat32bppRGB
         if (s == Gdiplus::Ok)
                 pBitmap->UnlockBits(&bitmapData);
 
         return s;
+}
+
+void sgSwap(unsigned char str1, unsigned char str2)
+{
+	unsigned char temp = str1;
+	str1 = str2;
+	str2 = temp;
 }
 
 void sgFlipUpDown(unsigned char* pData)
@@ -176,7 +205,8 @@ void sgFlipUpDown(unsigned char* pData)
 
         for (unsigned int y = 0; y < gHeight / 2; y++) {
                 for (unsigned int x = 0; x < gWidth * gChannels; x++) {
-                        swap(scan0[x], scan1[x]);
+                    swap(scan0[x], scan1[x]);
+					//sgSwap(scan0[x], scan1[x]);
                 }
                 scan0 += gWidth * gChannels;
                 scan1 -= gWidth * gChannels;
@@ -215,3 +245,23 @@ void sgFreeMediaType(AM_MEDIA_TYPE& mt)
     }
 }
 
+void sgConvertBetweenBGRAandRGBA(const unsigned char* input, int pixel_width, unsigned char* output) 
+{
+	for (int x = 0; x < pixel_width; x++) {
+		const unsigned char* pixel_in = &input[x * 4];
+		unsigned char* pixel_out = &output[x * 4];
+		pixel_out[0] = pixel_in[2];
+		pixel_out[1] = pixel_in[1];
+		pixel_out[2] = pixel_in[0];
+		pixel_out[3] = pixel_in[3];
+	}
+}
+
+
+void sgRgb32ToRgba(unsigned char* input, int pixel_width)
+{
+	for (int x = 0; x < pixel_width; x++) {
+		unsigned char* pixel_in = &input[x * 4];
+		pixel_in[3] = 0;
+	}
+}

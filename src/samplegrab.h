@@ -19,4 +19,7 @@ unsigned int sgGetDataChannels();
 
 void sgCloseSampleGrabber();
 
+void sgConvertBetweenBGRAandRGBA(const unsigned char* input, int pixel_width, unsigned char* output);
+void sgRgb32ToRgba(unsigned char* input, int pixel_width);
+
 #endif
