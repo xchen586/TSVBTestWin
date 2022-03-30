@@ -14,7 +14,8 @@ ISampleGrabber *_pGrabber = NULL;
 
 long _bufferSize = 0;
 unsigned char* _pBufferCapture = 0;
-unsigned char* _pBufferVB = 0;
+unsigned char* _pBufferVBInput = 0;
+unsigned char* _pBufferVBResult = 0;
 
 Gdiplus::Bitmap *_pCapturedBitmap = 0;
 Gdiplus::Bitmap *_pVBBitmap = 0;
@@ -58,9 +59,14 @@ void sgCloseSampleGrabber()
 		_bufferSize = 0;
 	}
 
-	if (_pBufferVB) {
-		delete[] _pBufferVB;
-		_pBufferVB = 0;
+	if (_pBufferVBInput) {
+		delete[] _pBufferVBInput;
+		_pBufferVBInput = 0;
+	}
+
+	if (_pBufferVBResult) {
+		delete[] _pBufferVBResult;
+		_pBufferVBResult = 0;
 	}
 
 	if (_pCapturedBitmap != 0) {
@@ -174,6 +180,16 @@ Gdiplus::Bitmap *sgGetVBBitmap(unsigned char * pBufferInput)
 	}
 }
 
+Gdiplus::Bitmap *sgGetVBBitmap() 
+{
+	unsigned char * pVBData = sgGetVBResultData();
+	if (!pVBData) {
+		return 0;
+	}
+
+	return sgGetVBBitmap(pVBData);
+}
+
 unsigned char* sgGrabRGB32Data()
 {
 
@@ -194,11 +210,16 @@ unsigned char* sgGrabRGB32Data()
 			_pBufferCapture = nullptr;
 		}
 		_pBufferCapture = new unsigned char[_bufferSize];
-		if (_pBufferVB != 0) {
-			delete[] _pBufferVB;
-			_pBufferVB = nullptr;
+		if (_pBufferVBInput != 0) {
+			delete[] _pBufferVBInput;
+			_pBufferVBInput = nullptr;
 		}
-		_pBufferVB = new unsigned char[_bufferSize];
+		_pBufferVBInput = new unsigned char[_bufferSize];
+		if (_pBufferVBResult != 0) {
+			delete[] _pBufferVBResult;
+			_pBufferVBResult = nullptr;
+		}
+		_pBufferVBResult = new unsigned char[_bufferSize];
 	}
 	if (!_pBufferCapture) {
 		return 0;
@@ -217,9 +238,9 @@ unsigned char* sgGrabRGB32Data()
 unsigned char* sgGrabBGRAData()
 {
 	unsigned char * pRGB32Data = sgGrabRGB32Data();
-	if (pRGB32Data && _pBufferVB) {
-		sgConvertBetweenBGRAandRGBA(pRGB32Data, gWidth * gHeight, _pBufferVB);
-		return _pBufferVB;
+	if (pRGB32Data && _pBufferVBInput) {
+		sgConvertBetweenBGRAandRGBA(pRGB32Data, gWidth * gHeight, _pBufferVBInput);
+		return _pBufferVBInput;
 	}
 	else {
 		return 0;
@@ -326,18 +347,42 @@ void sgRgb32ToRgba(unsigned char* input, int pixel_width)
 	}
 }
 
-unsigned char* sgGetBufferDataFromFrame(IFrame * pFrame, BOOL isCopy)
+BOOL sgGetBufferDataFromFrame(IFrame * pFrame, unsigned char* pBuffer, BOOL isCopy = FALSE)
 {
-	if (!pFrame) {
-		return 0;
+	if (!pFrame
+		||!pBuffer) {
+		return FALSE;
 	}
-	return 0;
-}
+	
+	ILockedFrameData * pFrameData = nullptr;
+	pFrameData = pFrame->lock(FrameLock::read);
+	if (!pFrameData) {
+		return FALSE;
+	}
 
+	void * pDataPointer = pFrameData->dataPointer(0);
+	if (!pDataPointer) {
+		pFrameData->release();
+		return FALSE;
+	}
+
+	size_t width = pFrame->width();
+	size_t height = pFrame->height();
+	size_t bytePerLine = pFrameData->bytesPerLine(0);
+	size_t bytePerPixel = bytePerLine / width;
+	
+	sgConvertBetweenBGRAandRGBA((const unsigned char*)pDataPointer, width * height, pBuffer);
+
+	return TRUE;
+}
 
 unsigned char* sgGetVBResultData(unsigned char* pInputBGRA)
 {
 	if (!pInputBGRA) {
+		return 0;
+	}
+
+	if (!_pBufferVBResult) {
 		return 0;
 	}
 
@@ -364,13 +409,29 @@ unsigned char* sgGetVBResultData(unsigned char* pInputBGRA)
 	if (!pProcessedFrame) {
 		return 0;
 	}
+	
+	unsigned char * ret = _pBufferVBResult;
+	BOOL canGetData = sgGetBufferDataFromFrame(pProcessedFrame, ret);
+	if (pProcessedFrame) {
+		pProcessedFrame->release();
+	}
 
-
-	return 0;
+	if (canGetData) {
+		return ret;
+	}
+	else {
+		return 0;
+	}
 }
 
 unsigned char* sgGetVBResultData()
 {
 	unsigned char* pInputBGRA = sgGrabBGRAData();
-	return sgGetVBResultData(pInputBGRA);
+	if (pInputBGRA) {
+		return sgGetVBResultData(pInputBGRA);
+	}
+	else {
+		return 0;
+	}
+	
 }

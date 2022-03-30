@@ -235,6 +235,7 @@ void CVidCapDlg::OnTimer(UINT_PTR nIDEvent)
 {
 	// TODO: Add your message handler code here and/or call default
 	DoCaptureFrame();
+	//DoVBFrame();
 	CDialog::OnTimer(nIDEvent);
 }
 
@@ -251,6 +252,10 @@ void CVidCapDlg::DoCaptureFrame()
 
 void CVidCapDlg::DoVBFrame()
 {
+	Gdiplus::Bitmap * ret = sgGetVBBitmap();
+	if (ret) {
+		DrawData(ret);
+	}
 
 }
 

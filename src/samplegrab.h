@@ -20,6 +20,7 @@ Gdiplus::Bitmap *sgGetVBBitmap(unsigned char * pBufferInput);
 
 
 unsigned char* sgGetVBResultData();
+Gdiplus::Bitmap *sgGetVBBitmap();
 
 long sgGetBufferSize();
 
