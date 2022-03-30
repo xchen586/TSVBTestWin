@@ -89,6 +89,7 @@ BOOL CVidCapDlg::OnInitDialog()
 		return FALSE;
 	}
 
+	sgSetVBHandler(&m_handler);
 	// Initialize COM
 	if (FAILED(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED))) {
 		MessageBox(L"CoInitialize Failed!", L"COM error");
@@ -261,8 +262,14 @@ void CVidCapDlg::DoCaptureFrame()
 	TRACE(L" %d:%d:%d\n", SystemTime.wHour, SystemTime.wMinute, SystemTime.wSecond);
 
 	unsigned char* pData = sgGrabRGB32Data();
-	if (pData != 0)
+	if (pData != 0) {
 		DrawData(sgGetCaptureBitmap());
+	}
+	else {
+		TRACE(L"Fail to capture frame data");
+		return;
+	}
+		
 }
 
 void CVidCapDlg::DoVBFrame()

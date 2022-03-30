@@ -6,7 +6,7 @@
 
 class CVBHandler;
 
-void setVBHandler(CVBHandler * pVBHandler);
+void sgSetVBHandler(CVBHandler * pVBHandler);
 
 IBaseFilter* sgGetSampleGrabber();
 HRESULT sgAddSampleGrabber(IGraphBuilder *pGraph);

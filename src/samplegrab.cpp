@@ -29,7 +29,7 @@ void sgFlipUpDown(unsigned char* pData);
 void sgFreeMediaType(AM_MEDIA_TYPE& mt);
 
 
-void setVBHandler(CVBHandler * pVBHandler)
+void sgSetVBHandler(CVBHandler * pVBHandler)
 {
 	_pVBHandler = pVBHandler;
 	if (_pVBHandler) {
