@@ -54,6 +54,7 @@ private:
 		void OnDealWithMultiMediaTimer();
 		void DoCaptureFrame();
 		void DoVBFrame();
+		void DoProcessing();
 
         afx_msg LRESULT OnGraphMessage(WPARAM wParam, LPARAM lParam);
         afx_msg void OnBnClickedEnumadaptorsButton();
@@ -64,7 +65,12 @@ private:
 		afx_msg void OnWindowPosChanged(WINDOWPOS* lpwndpos);
         afx_msg void OnBnClickedFdetectCheck();       
         afx_msg void OnStnDblclickCapimgStatic();
+		afx_msg void OnClickedCheckVb();
 
+public:
+	CButton m_checkEnableVB;
+	
+	BOOL m_bEnableVB;
 };
 
 #ifdef _WIN64

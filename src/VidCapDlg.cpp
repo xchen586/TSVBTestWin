@@ -31,6 +31,7 @@ CVidCapDlg::CVidCapDlg(CWnd* pParent /*=NULL*/)
 	, m_idEvent(0), m_uResolution(30)
 	, m_TakeSnapshot(false)
 	, pBmpEncoder(GUID_NULL)
+	, m_bEnableVB(FALSE)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -45,6 +46,8 @@ void CVidCapDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_RUN_BUTTON, m_RunButton);
 	DDX_Control(pDX, IDC_CAPIMG_STATIC, m_CapImgStatic);
 	DDX_Control(pDX, IDC_VIDINFO_STATIC, m_VideoFormat);
+	DDX_Control(pDX, IDC_CHECK_VB, m_checkEnableVB);
+	DDX_Check(pDX, IDC_CHECK_VB, m_bEnableVB);
 }
 
 BEGIN_MESSAGE_MAP(CVidCapDlg, CDialog)
@@ -58,6 +61,7 @@ BEGIN_MESSAGE_MAP(CVidCapDlg, CDialog)
 	ON_WM_CLOSE()
 	ON_WM_WINDOWPOSCHANGED()
 	ON_STN_DBLCLK(IDC_CAPIMG_STATIC, &CVidCapDlg::OnStnDblclickCapimgStatic)
+	ON_BN_CLICKED(IDC_CHECK_VB, &CVidCapDlg::OnClickedCheckVb)
 END_MESSAGE_MAP()
 
 
@@ -191,6 +195,8 @@ void CVidCapDlg::OnBnClickedEnumadaptorsButton()
 void CVidCapDlg::OnBnClickedRunButton()
 {
 	UpdateData();
+	BOOL enable = m_checkEnableVB.IsWindowEnabled();
+	m_checkEnableVB.EnableWindow(!enable);
 
 #if USE_MULTIMEDIA_TIMER
 	OnDealWithMultiMediaTimer();
@@ -234,9 +240,18 @@ void CVidCapDlg::OnDealWithTimer()
 void CVidCapDlg::OnTimer(UINT_PTR nIDEvent)
 {
 	// TODO: Add your message handler code here and/or call default
-	DoCaptureFrame();
-	//DoVBFrame();
+	DoProcessing();
 	CDialog::OnTimer(nIDEvent);
+}
+
+void CVidCapDlg::DoProcessing() 
+{
+	if (m_bEnableVB) {
+		DoVBFrame();
+	}
+	else {
+		DoCaptureFrame();
+	}
 }
 
 void CVidCapDlg::DoCaptureFrame()
@@ -328,7 +343,7 @@ void CALLBACK TimerFunction(UINT wTimerID, UINT msg,
 void CVidCapDlg::MMTimerHandler(UINT nIDEvent) // called every elTime milliseconds
 {
 	// do what you want to do, but quickly
-	DoCaptureFrame();
+	DoProcessing();
 }
 
 
@@ -378,3 +393,10 @@ void CVidCapDlg::OnStnDblclickCapimgStatic()
 	m_TakeSnapshot = true;
 }
 
+
+
+void CVidCapDlg::OnClickedCheckVb()
+{
+	// TODO: Add your control notification handler code here
+	UpdateData();
+}
