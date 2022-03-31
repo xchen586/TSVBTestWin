@@ -53,7 +53,8 @@ bool CVBHandler::init()
 	//	return false;
 	//}
 
-	_pipeline->enableBlurBackground(0.8);
+	//_pipeline->enableBlurBackground(0.8);
+	_pipeline->enableBlurBackground(1.0);
 
 	if (_sdkFactory) {
 		_sdkFactory->release();
