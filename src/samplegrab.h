@@ -13,9 +13,9 @@ HRESULT sgAddSampleGrabber(IGraphBuilder *pGraph);
 HRESULT sgSetSampleGrabberMediaType();
 HRESULT sgGetSampleGrabberMediaType();
 
-unsigned char* sgGrabARGBData();            //call grab data first
+unsigned char* sgGrabCaptureRawData();            //call grab data first
 Gdiplus::Bitmap* sgGetCaptureBitmap();        //fill bitmap with grabbed data
-unsigned char* sgGrabBGRAData();
+unsigned char* sgGrabVBInputData();
 Gdiplus::Bitmap *sgGetVBBitmap(unsigned char * pBufferInput);
 
 

@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "CVBHandler.h"
+#include "samplegrab.h"
 
 
 CVBHandler::CVBHandler()

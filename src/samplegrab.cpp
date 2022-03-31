@@ -9,6 +9,8 @@ CVBHandler * _pVBHandler = NULL;
 IPipeline * _pPipeline = NULL;
 IFrameFactory * _pFrameFactroy = NULL;
 
+AM_MEDIA_TYPE m_mtGrab;
+
 IBaseFilter *_pGrabberFilter = NULL;
 ISampleGrabber *_pGrabber = NULL;
 
@@ -99,16 +101,23 @@ HRESULT sgAddSampleGrabber(IGraphBuilder *pGraph)
 	return hr;
 }
 
+Gdiplus::PixelFormat sgGetBitmapPixelFormat()
+{
+	Gdiplus::PixelFormat ret = PixelFormat32bppRGB;
+	if (MEDIASUBTYPE_ARGB32 == m_mtGrab.subtype) {
+		ret = PixelFormat32bppPARGB;
+	}
+	return ret;
+}
+
 HRESULT sgSetSampleGrabberMediaType()
 {
-	AM_MEDIA_TYPE mt;
-	ZeroMemory(&mt, sizeof(AM_MEDIA_TYPE));
-	mt.majortype = MEDIATYPE_Video;
-	//mt.subtype = MEDIASUBTYPE_RGB32;
-	//mt.subtype = MEDIASUBTYPE_RGB24;
-	//mt.subtype = MEDIASUBTYPE_NV12;
-	mt.subtype = MEDIASUBTYPE_ARGB32;
-	HRESULT hr = _pGrabber->SetMediaType(&mt);
+
+	ZeroMemory(&m_mtGrab, sizeof(AM_MEDIA_TYPE));
+	m_mtGrab.majortype = MEDIATYPE_Video;
+	//m_mtGrab.subtype = MEDIASUBTYPE_RGB32;
+	m_mtGrab.subtype = MEDIASUBTYPE_ARGB32;
+	HRESULT hr = _pGrabber->SetMediaType(&m_mtGrab);
 	if (FAILED(hr)) {
 		return hr;
 	}
@@ -144,12 +153,12 @@ Gdiplus::Bitmap *sgGetCaptureBitmap()
 	}
 
 	//sgRgb32ToRgba(_pBufferCapture, gWidth * gHeight);
-
+	Gdiplus::PixelFormat pixelFormat = sgGetBitmapPixelFormat();
 	if (_pCapturedBitmap == 0)
-		_pCapturedBitmap = ::new Gdiplus::Bitmap(gWidth, gHeight, PixelFormat32bppARGB);  //PixelFormat24bppRGB, PixelFormat32bppRGB    
+		_pCapturedBitmap = ::new Gdiplus::Bitmap(gWidth, gHeight, pixelFormat);     
 	else if (gWidth != _pCapturedBitmap->GetWidth() || gHeight != _pCapturedBitmap->GetHeight()) {
 		::delete _pCapturedBitmap;
-		_pCapturedBitmap = ::new Gdiplus::Bitmap(gWidth, gHeight, PixelFormat32bppARGB); //PixelFormat24bppRGB, PixelFormat32bppRGB
+		_pCapturedBitmap = ::new Gdiplus::Bitmap(gWidth, gHeight, pixelFormat);
 	}
 
 	if (_bufferSize != gWidth * gHeight * gChannels)
@@ -166,14 +175,14 @@ Gdiplus::Bitmap *sgGetVBBitmap(unsigned char * pBufferInput)
 	if (!pBufferInput) {
 		return 0;
 	}
+
+	Gdiplus::PixelFormat pixelFormat = sgGetBitmapPixelFormat();
 	if (_pVBBitmap == 0) {
-		//_pVBBitmap = ::new Gdiplus::Bitmap(gWidth, gHeight, PixelFormat32bppRGB);
-		_pVBBitmap = ::new Gdiplus::Bitmap(gWidth, gHeight, PixelFormat32bppARGB);
+		_pVBBitmap = ::new Gdiplus::Bitmap(gWidth, gHeight, pixelFormat);
 	}
 	else if (gWidth != _pVBBitmap->GetWidth() || gHeight != _pVBBitmap->GetHeight()) {
 		::delete _pVBBitmap;
-		//_pVBBitmap = ::new Gdiplus::Bitmap(gWidth, gHeight, PixelFormat32bppRGB);
-		_pVBBitmap = ::new Gdiplus::Bitmap(gWidth, gHeight, PixelFormat32bppARGB);
+		_pVBBitmap = ::new Gdiplus::Bitmap(gWidth, gHeight, pixelFormat);
 	}
 
 	if (sgSetBitmapData(_pVBBitmap, pBufferInput) == 0) {
@@ -194,7 +203,7 @@ Gdiplus::Bitmap *sgGetVBBitmap()
 	return sgGetVBBitmap(pVBData);
 }
 
-unsigned char* sgGrabARGBData()
+unsigned char* sgGrabCaptureRawData()
 {
 
 	HRESULT hr;
@@ -233,17 +242,26 @@ unsigned char* sgGrabARGBData()
 		return 0;
 	else {
 		sgFlipUpDown(_pBufferCapture);
-		//sgConvertRGB32toRGBA(_pBufferCapture, gWidth * gHeight);
-		//sgConvertBetweenBGRAandRGBA(_pBufferCapture, gWidth * gHeight, _pBufferCapture);
 		return _pBufferCapture;
 	}
 }
 
-unsigned char* sgGrabBGRAData()
+void sgConvertBetweenCaptureAndVB(const unsigned char* input, int pixel_width, unsigned char* output)
 {
-	unsigned char * pRGB32Data = sgGrabARGBData();
+	if (MEDIASUBTYPE_ARGB32 == m_mtGrab.subtype) {
+		sgConvertBetweenBGRAandARGB(input, pixel_width, output);
+	}
+	else {
+		sgConvertBetweenBGRAandRGBA(input, pixel_width, output);
+	}
+}
+
+unsigned char* sgGrabVBInputData()
+{
+	unsigned char * pRGB32Data = sgGrabCaptureRawData();
+
 	if (pRGB32Data && _pBufferVBInput) {
-		sgConvertBetweenBGRAandARGB(pRGB32Data, gWidth * gHeight, _pBufferVBInput);
+		sgConvertBetweenCaptureAndVB(pRGB32Data, gWidth * gHeight, _pBufferVBInput);
 		return _pBufferVBInput;
 	}
 	else {
@@ -269,7 +287,7 @@ int sgSetBitmapData(Gdiplus::Bitmap* pBitmap, const unsigned char* pData)
 
 	Gdiplus::Status s = pBitmap->LockBits(&Gdiplus::Rect(0, 0, pBitmap->GetWidth(), pBitmap->GetHeight()),
 		Gdiplus::ImageLockModeWrite | Gdiplus::ImageLockModeUserInputBuf,
-		PixelFormat32bppRGB, &bitmapData); //PixelFormat24bppRGB, PixelFormat32bppRGB
+		PixelFormat32bppPARGB, &bitmapData); //PixelFormat24bppRGB, PixelFormat32bppRGB
 	if (s == Gdiplus::Ok)
 		pBitmap->UnlockBits(&bitmapData);
 
@@ -388,7 +406,7 @@ BOOL sgGetBufferDataFromFrame(IFrame * pFrame, unsigned char* pBuffer, BOOL isCo
 	size_t bytePerPixel = bytePerLine / width;
 	
 	//memcpy(pBuffer, pDataPointer, width * height * bytePerPixel);
- 	sgConvertBetweenBGRAandARGB((unsigned char*)(pDataPointer), width * height, pBuffer);
+	sgConvertBetweenCaptureAndVB((unsigned char*)(pDataPointer), width * height, pBuffer);
 	pFrameData->release();
 
 	return TRUE;
@@ -444,7 +462,7 @@ unsigned char* sgGetVBResultData(unsigned char* pInputBGRA)
 
 unsigned char* sgGetVBResultData()
 {
-	unsigned char* pInputBGRA = sgGrabBGRAData();
+	unsigned char* pInputBGRA = sgGrabVBInputData();
 	if (pInputBGRA) {
 		return sgGetVBResultData(pInputBGRA);
 	}

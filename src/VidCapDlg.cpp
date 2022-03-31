@@ -272,7 +272,7 @@ void CVidCapDlg::DoCaptureFrame()
 	GetLocalTime(&SystemTime);
 	TRACE(L" %d:%d:%d\n", SystemTime.wHour, SystemTime.wMinute, SystemTime.wSecond);
 
-	unsigned char* pData = sgGrabARGBData();
+	unsigned char* pData = sgGrabCaptureRawData();
 	if (pData != 0) {
 		DrawData(sgGetCaptureBitmap());
 	}
