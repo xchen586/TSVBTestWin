@@ -31,7 +31,8 @@ CVidCapDlg::CVidCapDlg(CWnd* pParent /*=NULL*/)
 	, m_idEvent(0), m_uResolution(30)
 	, m_TakeSnapshot(false)
 	, pBmpEncoder(GUID_NULL)
-	, m_bEnableVB(FALSE)
+	, m_bEnableBlur(FALSE)
+	, m_bEnableReplace(FALSE)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -46,8 +47,10 @@ void CVidCapDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_RUN_BUTTON, m_RunButton);
 	DDX_Control(pDX, IDC_CAPIMG_STATIC, m_CapImgStatic);
 	DDX_Control(pDX, IDC_VIDINFO_STATIC, m_VideoFormat);
-	DDX_Control(pDX, IDC_CHECK_VB, m_checkEnableVB);
-	DDX_Check(pDX, IDC_CHECK_VB, m_bEnableVB);
+	DDX_Control(pDX, IDC_CHECK_VB, m_checkEnableBlur);
+	DDX_Check(pDX, IDC_CHECK_VB, m_bEnableBlur);
+	DDX_Control(pDX, IDC_CHECK_REPLACE, m_checkEnableReplace);
+	DDX_Check(pDX, IDC_CHECK_REPLACE, m_bEnableReplace);
 }
 
 BEGIN_MESSAGE_MAP(CVidCapDlg, CDialog)
@@ -61,7 +64,8 @@ BEGIN_MESSAGE_MAP(CVidCapDlg, CDialog)
 	ON_WM_CLOSE()
 	ON_WM_WINDOWPOSCHANGED()
 	ON_STN_DBLCLK(IDC_CAPIMG_STATIC, &CVidCapDlg::OnStnDblclickCapimgStatic)
-	ON_BN_CLICKED(IDC_CHECK_VB, &CVidCapDlg::OnClickedCheckVb)
+	ON_BN_CLICKED(IDC_CHECK_VB, &CVidCapDlg::OnClickedCheckBlur)
+	ON_BN_CLICKED(IDC_CHECK_REPLACE, &CVidCapDlg::OnClickedCheckReplace)
 END_MESSAGE_MAP()
 
 
@@ -89,6 +93,7 @@ BOOL CVidCapDlg::OnInitDialog()
 		return FALSE;
 	}
 
+	m_strBackgroundPath = GetDefaultBackgroundImagePath();
 	sgSetVBHandler(&m_handler);
 	// Initialize COM
 	if (FAILED(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED))) {
@@ -196,8 +201,9 @@ void CVidCapDlg::OnBnClickedEnumadaptorsButton()
 void CVidCapDlg::OnBnClickedRunButton()
 {
 	UpdateData();
-	BOOL enable = m_checkEnableVB.IsWindowEnabled();
-	m_checkEnableVB.EnableWindow(!enable);
+	BOOL enable = m_checkEnableBlur.IsWindowEnabled();
+	m_checkEnableBlur.EnableWindow(!enable);
+	m_checkEnableReplace.EnableWindow(!enable);
 
 #if USE_MULTIMEDIA_TIMER
 	OnDealWithMultiMediaTimer();
@@ -247,12 +253,17 @@ void CVidCapDlg::OnTimer(UINT_PTR nIDEvent)
 
 void CVidCapDlg::DoProcessing() 
 {
-	if (m_bEnableVB) {
+	if (VBEnabled()) {
 		DoVBFrame();
 	}
 	else {
 		DoCaptureFrame();
 	}
+}
+
+BOOL CVidCapDlg::VBEnabled()
+{
+	return m_bEnableBlur || m_bEnableReplace;
 }
 
 void CVidCapDlg::DoCaptureFrame()
@@ -330,6 +341,17 @@ void CVidCapDlg::OnDealWithMultiMediaTimer()
 
 }
 
+CString CVidCapDlg::GetDefaultBackgroundImagePath()
+{
+	CString ret;
+	TCHAR path[MAX_PATH];
+	DWORD dwGet = GetModuleFileName(NULL, path, MAX_PATH);
+	CString strPath = CString(path);
+	int index = strPath.ReverseFind(_T('\\'));
+	strPath = strPath.Mid(0, index + 1);
+	ret = strPath + _T("background.jpg");
+	return ret;
+}
 
 #ifdef _WIN64
 void __stdcall TimerFunction(UINT wTimerID, UINT msg,
@@ -402,8 +424,35 @@ void CVidCapDlg::OnStnDblclickCapimgStatic()
 
 
 
-void CVidCapDlg::OnClickedCheckVb()
+void CVidCapDlg::OnClickedCheckBlur()
 {
 	// TODO: Add your control notification handler code here
 	UpdateData();
+	if (!m_handler.isInitialized()) {
+		return;
+	}
+	if (m_bEnableBlur) {
+		m_handler._pipeline->enableBlurBackground(1.0);
+	}
+	else {
+		m_handler._pipeline->disableBackgroundBlur();
+	}
+}
+
+
+void CVidCapDlg::OnClickedCheckReplace()
+{
+	// TODO: Add your control notification handler code here
+	UpdateData();
+	if (!m_handler.isInitialized()) {
+		return;
+	}
+	if (m_bEnableReplace) {
+		m_handler.setBackgroundWithContentOfFile(m_strBackgroundPath.GetBuffer());
+		m_strBackgroundPath.ReleaseBuffer();
+	}
+	else {
+		m_handler.resetBackgroundImage();
+	}
+	
 }

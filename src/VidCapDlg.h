@@ -31,6 +31,8 @@ protected:
         DECLARE_MESSAGE_MAP()
 
 private:
+		CString m_strBackgroundPath;
+
 		UINT m_uResolution;
 		MMRESULT m_idEvent;
 
@@ -52,9 +54,12 @@ private:
 
 		void OnDealWithTimer();
 		void OnDealWithMultiMediaTimer();
+		CString GetDefaultBackgroundImagePath();
 		void DoCaptureFrame();
 		void DoVBFrame();
 		void DoProcessing();
+
+		BOOL VBEnabled();
 
         afx_msg LRESULT OnGraphMessage(WPARAM wParam, LPARAM lParam);
         afx_msg void OnBnClickedEnumadaptorsButton();
@@ -65,12 +70,15 @@ private:
 		afx_msg void OnWindowPosChanged(WINDOWPOS* lpwndpos);
         afx_msg void OnBnClickedFdetectCheck();       
         afx_msg void OnStnDblclickCapimgStatic();
-		afx_msg void OnClickedCheckVb();
+		afx_msg void OnClickedCheckBlur();
 
 public:
-	CButton m_checkEnableVB;
+	CButton m_checkEnableBlur;
 	
-	BOOL m_bEnableVB;
+	BOOL m_bEnableBlur;
+	afx_msg void OnClickedCheckReplace();
+	CButton m_checkEnableReplace;
+	BOOL m_bEnableReplace;
 };
 
 #ifdef _WIN64

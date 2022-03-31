@@ -228,6 +228,7 @@
     <ClInclude Include="VidCapDlg.h" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="background.jpg" />
     <Image Include="res\VidCap.ico" />
   </ItemGroup>
   <ItemGroup>
