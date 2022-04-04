@@ -20,6 +20,9 @@ ICaptureGraphBuilder2 * g_pCapture = NULL;
 PLAYSTATE g_psCurrent = Stopped;
 unsigned int g_nDeviceCount = 0;
 
+#ifdef _DEBUG
+#define REGISTER_FILTERGRAPH
+#endif
 
 //
 // Functions
@@ -34,8 +37,6 @@ HRESULT SetupVideoWindow(HWND hWnd);
 void ResizeVideoWindow(HWND hWnd);
 HRESULT AddGraphToRot(IUnknown *pUnkGraph, DWORD *pdwRegister);
 void RemoveGraphFromRot(DWORD pdwRegister);
-
-
 
 void vcGetCaptureDevices(CComboBox& adaptersBox)
 {
@@ -157,7 +158,7 @@ HRESULT FindCaptureDevice(IBaseFilter** ppSrcFilter, unsigned int devIndex)
 		if (FAILED(hr)) {
 			Msg(TEXT("Couldn't bind moniker to filter object!  hr=0x%x"), hr);
 		}
-#ifdef DEBUG
+#ifdef _DEBUG
 		IPropertyBag *pPropBag;
 		hr = pMoniker->BindToStorage(0, 0, IID_IPropertyBag,
 			(void **)& pPropBag);
