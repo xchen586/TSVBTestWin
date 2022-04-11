@@ -2,6 +2,7 @@
 #define MANYCAM_VB_INCLUDE_PIPELINE_H
 
 #include "frame.h"
+#include "pipeline_config.h"
 
 namespace manycam {
 
@@ -26,6 +27,10 @@ public:
 class IPipeline : public IRelease
 {
 public:
+	virtual PipelineError setConfiguration(const IPipelineConfiguration* config) = 0;
+	virtual IPipelineConfiguration* copyConfiguration() const = 0;
+	virtual IPipelineConfiguration* copyDefaultConfiguration() const = 0;
+
 	virtual PipelineError enableBlurBackground(float blurPower) = 0;
 	virtual void disableBackgroundBlur() = 0;
 	virtual bool getBlurBackgroundState(float* blurPower) const = 0;

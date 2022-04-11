@@ -48,10 +48,31 @@ bool CVBHandler::init()
 	if (!_frameFactory) {
 		return false;
 	}
+	
 
-	_pipeline->enableReplaceBackground(&_backgroundController);
-	if (!_backgroundController) {
-		return false;
+	PipelineError error = PipelineErrorCode::ok;
+	_backgroundController = NULL;
+	error = _pipeline->enableReplaceBackground(&_backgroundController);
+	if ((error != PipelineErrorCode::ok)
+		|| !_backgroundController) {
+		IPipelineConfiguration * pConfig = _pipeline->copyConfiguration();
+		if (pConfig) {
+			Backend backend = (Backend)pConfig->getBackend();
+			backend = Backend::CPU;
+			pConfig->setBackend(backend);
+			error = _pipeline->setConfiguration(pConfig);
+			if (error != PipelineErrorCode::ok) {
+				return false;
+			}
+			error = _pipeline->enableReplaceBackground(&_backgroundController);
+			if ((error != PipelineErrorCode::ok)
+				|| !_backgroundController) {
+				return false;
+			}
+		}
+		else {
+			return false;
+		}
 	}
 
 	//_pipeline->enableBlurBackground(0.8);

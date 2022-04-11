@@ -223,6 +223,7 @@
     <ClInclude Include="vb_sdk\frame_factory.h" />
     <ClInclude Include="vb_sdk\irelease.h" />
     <ClInclude Include="vb_sdk\pipeline.h" />
+    <ClInclude Include="vb_sdk\pipeline_config.h" />
     <ClInclude Include="vb_sdk\sdk_factory.h" />
     <ClInclude Include="VidCap.h" />
     <ClInclude Include="VidCapDlg.h" />

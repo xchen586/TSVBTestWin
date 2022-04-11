@@ -432,7 +432,7 @@ void CVidCapDlg::OnClickedCheckBlur()
 		return;
 	}
 	if (m_bEnableBlur) {
-		m_handler._pipeline->enableBlurBackground(1.0);
+		m_handler._pipeline->enableBlurBackground(0.8);
 	}
 	else {
 		m_handler._pipeline->disableBackgroundBlur();
