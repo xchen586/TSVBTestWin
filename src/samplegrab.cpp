@@ -242,6 +242,7 @@ unsigned char* sgGrabCaptureRawData()
 		return 0;
 	else {
 		sgFlipUpDown(_pBufferCapture);
+		//sgConvertRGB32toRGBA(_pBufferCapture, gWidth * gHeight);
 		return _pBufferCapture;
 	}
 }
