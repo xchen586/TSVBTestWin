@@ -107,7 +107,8 @@ BOOL CVidCapDlg::OnInitDialog()
 	}
 
 	vcGetCaptureDevices(m_AdapterCombo);
-
+	m_checkEnableReplace.ShowWindow(SW_HIDE);
+	m_checkEnableReplace.UpdateWindow();
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
 
